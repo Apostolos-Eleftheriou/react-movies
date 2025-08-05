@@ -127,10 +127,10 @@ const App = () => {
     <main>
       {showScrollTop && (
         <button
-          className='px-2 py-1 bg-[var(--color-dark-100)] z-20 text-white rounded-lg cursor-pointer fixed right-10 bottom-10'
+          className='px-2 py-1  backdrop-blur-2xl z-20 text-white rounded-lg cursor-pointer fixed right-10 bottom-10'
           onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
         >
-          &#129129;
+          <img src="arrow-up.svg" alt="Scroll to top" className='w-6 h-8' />
         </button>
       )}
 
