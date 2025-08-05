@@ -74,8 +74,9 @@ const MovieModal = ({ movieId, setSelectedMovie }) => {
                 <div className='fixed inset-0 z-50 flex flex-col backdrop-blur-2xl w-full h-full bg-[var(--color-dark-100)]/50 overflow-auto'>
                     <div className='sticky top-0 left-0 w-full flex items-center justify-between px-8 py-4 z-50 h-[72px] test bg-[var(--color-dark-100)]/50 backdrop-blur-lg'>
                         <span className='text-xl font-bold text-white truncate max-w-[70vw]'>{movie.title}</span>
-                        <button onClick={() => setSelectedMovie(null)}>
-                            <img src="close-icon.webp" alt="Close" className='w-10 h-10 invert cursor-pointer' />
+                        <button onClick={() => setSelectedMovie(null)} className='cursor-pointer'>
+                            {/* <img src="close-icon.webp" alt="Close" className='w-10 h-10 invert cursor-pointer' /> */}
+                            <img src="./times.svg" alt="close" className='w-10 h-10' />
                         </button>
                     </div>
                     <div className='flex-1 w-full pt-5 flex flex-col items-center justify-start px-4 max-w-[1250px] self-center'>

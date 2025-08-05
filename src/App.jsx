@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useCallback } from 'react'
+import { useEffect, useState, useRef, useCallback, useMemo } from 'react'
 import './App.css'
 import Search from './components/Search'
 import Skeleton from './components/Skeleton'
@@ -34,6 +34,37 @@ const App = () => {
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [isTrendingMoviesLoading, setisTrendingMoviesLoading] = useState(false);
   const [trendingMoviesError, settrendingMoviesError] = useState('');
+  const [showBookmarked, setShowBookmarked] = useState(false);
+  const [bookmarkedMovies, setBookmarkedMovies] = useState(() => {
+    const storedMovies = localStorage.getItem('bookmarkedMovies');
+    return storedMovies ? JSON.parse(storedMovies) : [];
+  });
+
+  const [searchBookmarkedTerm, setSearchBookmarkedTerm] = useState('');
+
+  // Handler to add/remove bookmarks and sync with localStorage
+  const handleBookmarkClick = (movie) => {
+    setBookmarkedMovies(prev => {
+      let updated;
+      if (prev.some(m => m.id === movie.id)) {
+        updated = prev.filter(m => m.id !== movie.id);
+      } else {
+        updated = [...prev, movie];
+      }
+      localStorage.setItem('bookmarkedMovies', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
+  // Memoized filtered bookmarks
+  const filteredBookmarkedMovies = useMemo(() => {
+    if (searchBookmarkedTerm) {
+      return bookmarkedMovies.filter(movie =>
+        movie.title.toLowerCase().includes(searchBookmarkedTerm.toLowerCase())
+      );
+    }
+    return bookmarkedMovies;
+  }, [searchBookmarkedTerm, bookmarkedMovies]);
 
 
   useDebounce(() => setdebouncedSearchTerm(searchTerm), 500, [searchTerm]);
@@ -146,6 +177,50 @@ const App = () => {
           <img src="arrow-up.svg" alt="Scroll to top" className='w-6 h-8' />
         </button>
       )}
+      {!showBookmarked && (
+        <button type='button' className='fixed right-0 top-20 z-20 cursor-pointer'>
+          <img src="./bookmarked.svg" alt="Menu" onClick={() => setShowBookmarked(true)} className='w-8 h-8bg-black/50 rounded-l-lg p-1 z-20 backdrop-blur-2xl' />
+        </button>
+      )}
+      <div
+        className={
+          'fixed right-0 hide-scrollbar top-0 z-20 w-full sm:max-w-[300px] h-full overflow-y-auto overflow-x-hidden bg-[var(--color-dark-100)] transition-transform duration-300 ease-in-out transform ' +
+          (showBookmarked ? 'translate-x-0' : 'translate-x-full')
+        }
+      >
+        <div className=' p-2 rounded-b-lg backdrop-blur-2xl sticky top-0 z-30'>
+          <div className='flex justify-between items-center '>
+            <h3 className='text-white font-bold ml-3'>Bookmarked Movies</h3>
+            <button type='button' className='z-40 cursor-pointer' onClick={() => setShowBookmarked(false)}><img src="./times.svg" alt="close" className='w-6 h-6' /></button>
+          </div>
+          <div className='p-2 w-full mt-2 relative'>
+            <input type='text' placeholder='Search Bookmarked' className='w-full outline-none p-3 pr-12 rounded-lg bg-black/50 text-white text-sm' onInput={(e) => setSearchBookmarkedTerm(e.target.value)} value={searchBookmarkedTerm} />
+            {searchBookmarkedTerm && (
+              <button type='button' className='z-40 cursor-pointer absolute right-5 top-[18px]' onClick={() => setSearchBookmarkedTerm('')}><img src="./times.svg" alt="close" className='w-6 h-6' /></button>
+            )}
+          </div>
+        </div>
+        {bookmarkedMovies.length > 0 ? (
+          <div className='p-2 gap-4 flex flex-col mb-4'>
+            {filteredBookmarkedMovies.length === 0 && (
+              <p className='text-center text-gray-400'>No results found</p>
+            )}
+            {filteredBookmarkedMovies.map((movie) => (
+              <MovieCard
+                key={movie.id}
+                movie={movie}
+                selectedMovie={selectedMovie}
+                onClick={() => setselectedMovie(movie.id)}
+                isBookMarked={true}
+                onBookmarkClick={handleBookmarkClick}
+              />
+            ))}
+          </div>
+        ) : (
+          <p className='text-center text-gray-400'>No bookmarks added yet</p>
+        )}
+      </div>
+
 
       {selectedMovie != null && (
         <MovieModal movieId={selectedMovie} setSelectedMovie={setselectedMovie} />
@@ -209,6 +284,7 @@ const App = () => {
           <p className='text-gray-500'>No movies found. Try a different search term.</p>
         )}
 
+
         <section className='all-movies' ref={container}>
           <h2 className='mt-[40px]'>All Movies</h2>
           {errorMessage ? (
@@ -216,7 +292,14 @@ const App = () => {
           ) : movies.length ? (
             <ul>
               {movies.map((movie) => (
-                <MovieCard key={movie.id} movie={movie} selectedMovie={selectedMovie} onClick={() => setselectedMovie(movie.id)} />
+                <MovieCard
+                  key={movie.id}
+                  movie={movie}
+                  selectedMovie={selectedMovie}
+                  onClick={() => setselectedMovie(movie.id)}
+                  isBookMarked={bookmarkedMovies.some(m => m.id === movie.id)}
+                  onBookmarkClick={handleBookmarkClick}
+                />
               ))}
             </ul>
           ) : isLoading ? (
