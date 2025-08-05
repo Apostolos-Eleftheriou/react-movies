@@ -40,22 +40,42 @@ const App = () => {
     const storedMovies = localStorage.getItem('bookmarkedMovies');
     return storedMovies ? JSON.parse(storedMovies) : [];
   });
+  const bookmarkElement = useRef(null);
 
   const [searchBookmarkedTerm, setSearchBookmarkedTerm] = useState('');
-  const shootConfetti = () => {
+  // const shootConfetti = () => {
+  //   confetti({
+  //     particleCount: 20,
+  //     spread: 190,
+  //     startVelocity: 20,
+  //     gravity: 0.7,
+  //     decay: 0.94,
+  //     scalar: 0.8,
+  //     shapes: ['star'],
+  //     colors: ['#FFE400', '#FFBD00', '#E89400', '#FFCA6C', '#FDFFB8'],
+  //     origin: { x: 0.99, y: 0.11 }, // near the top right
+  //     angle: 185,
+  //   });
+  // }
+
+  const shootConfettiFromElement = (element) => {
+    if (!element) return;
+    const rect = element.getBoundingClientRect();
+    const x = (rect.left + rect.width / 2) / window.innerWidth;
+    const y = (rect.top + rect.height / 2) / window.innerHeight;
     confetti({
-      particleCount: 20,
-      spread: 190,
-      startVelocity: 20,
+      particleCount: 40,
+      spread: 205,
+      startVelocity: 22,
       gravity: 0.7,
       decay: 0.94,
       scalar: 0.8,
       shapes: ['star'],
       colors: ['#FFE400', '#FFBD00', '#E89400', '#FFCA6C', '#FDFFB8'],
-      origin: { x: 0.99, y: 0.11 }, // near the top right
-      angle: 185,
+      origin: { x, y },
+      angle: 180,
     });
-  }
+  };
 
   // Handler to add/remove bookmarks and sync with localStorage
   const handleBookmarkClick = (movie) => {
@@ -67,9 +87,9 @@ const App = () => {
         updated = [...prev, movie];
         // Only show confetti when adding a bookmark
         if (!showBookmarked) {
-          setTimeout(() => { shootConfetti() }, 0);
-          setTimeout(() => { shootConfetti() }, 100);
-          setTimeout(() => { shootConfetti() }, 200);
+          setTimeout(() => { shootConfettiFromElement(bookmarkElement.current) }, 0);
+          setTimeout(() => { shootConfettiFromElement(bookmarkElement.current) }, 100);
+          setTimeout(() => { shootConfettiFromElement(bookmarkElement.current) }, 200);
         }
       }
       localStorage.setItem('bookmarkedMovies', JSON.stringify(updated));
@@ -199,7 +219,7 @@ const App = () => {
         </button>
       )}
       {!showBookmarked && (
-        <button type='button' className='fixed right-0 top-20 z-20 cursor-pointer'>
+        <button type='button' className='fixed right-0 top-20 z-20 cursor-pointer' ref={bookmarkElement}>
           <img src="./bookmarked.svg" alt="Menu" onClick={() => setShowBookmarked(true)} className='w-8 h-8bg-black/50 rounded-l-lg p-1 z-20 backdrop-blur-2xl' />
         </button>
       )}
