@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef, useCallback, useMemo } from 'react'
+import confetti from 'canvas-confetti';
 import './App.css'
 import Search from './components/Search'
 import Skeleton from './components/Skeleton'
@@ -41,6 +42,20 @@ const App = () => {
   });
 
   const [searchBookmarkedTerm, setSearchBookmarkedTerm] = useState('');
+  const shootConfetti = () => {
+    confetti({
+      particleCount: 20,
+      spread: 190,
+      startVelocity: 20,
+      gravity: 0.7,
+      decay: 0.94,
+      scalar: 0.8,
+      shapes: ['star'],
+      colors: ['#FFE400', '#FFBD00', '#E89400', '#FFCA6C', '#FDFFB8'],
+      origin: { x: 0.99, y: 0.11 }, // near the top right
+      angle: 185,
+    });
+  }
 
   // Handler to add/remove bookmarks and sync with localStorage
   const handleBookmarkClick = (movie) => {
@@ -50,6 +65,12 @@ const App = () => {
         updated = prev.filter(m => m.id !== movie.id);
       } else {
         updated = [...prev, movie];
+        // Only show confetti when adding a bookmark
+        if (!showBookmarked) {
+          setTimeout(() => { shootConfetti() }, 0);
+          setTimeout(() => { shootConfetti() }, 100);
+          setTimeout(() => { shootConfetti() }, 200);
+        }
       }
       localStorage.setItem('bookmarkedMovies', JSON.stringify(updated));
       return updated;
