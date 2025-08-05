@@ -1,4 +1,4 @@
-import { use, useEffect, useState, useRef, useCallback } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
 import './App.css'
 import Search from './components/Search'
 import Skeleton from './components/Skeleton'
@@ -32,19 +32,32 @@ const App = () => {
   const container = useRef(null);
   const loader = useRef(null);
   const [showScrollTop, setShowScrollTop] = useState(false);
+  const [isTrendingMoviesLoading, setisTrendingMoviesLoading] = useState(false);
+  const [trendingMoviesError, settrendingMoviesError] = useState('');
+
 
   useDebounce(() => setdebouncedSearchTerm(searchTerm), 500, [searchTerm]);
 
   const fetchTrendingMovies = async () => {
+    setisTrendingMoviesLoading(true);
+    settrendingMoviesError('');
     try {
       const response = await fetch(`${API_BASE_URL}/trending/movie/day`, API_OPTIONS);
       if (!response.ok) {
         throw new Error('Failed to fetch trending movies');
       }
       const data = await response.json();
+      if (data.Response === 'False') {
+        settrendingMoviesError(data.Error || 'Failed to fetch movies');
+        settrendingMovies([]);
+        return;
+      }
       settrendingMovies(data.results || []);
     } catch (error) {
       console.error('Error fetching trending movies:', error);
+      settrendingMoviesError('Failed to fetch trending movies. Please try again later.');
+    } finally {
+      setisTrendingMoviesLoading(false);
     }
   }
 
@@ -81,9 +94,9 @@ const App = () => {
 
   useEffect(() => {
     if (selectedMovie) {
-      document.getElementsByTagName('body')[0].style.overflow = 'hidden';
+      document.getElementsByTagName('body')[0].classList.add('overflow-hidden');
     } else {
-      document.getElementsByTagName('body')[0].style.overflow = 'auto';
+      document.getElementsByTagName('body')[0].classList.remove('overflow-hidden');
     }
   }, [selectedMovie]);
 
@@ -100,7 +113,7 @@ const App = () => {
   // Reset movies and page when search changes
   useEffect(() => {
     setPage(1);
-    setMovies([]); // Clear previous results before fetching new ones
+    setMovies([]);
     fetchMovies(debouncedSearchTerm, 1);
   }, [debouncedSearchTerm, fetchMovies]);
 
@@ -145,22 +158,9 @@ const App = () => {
           <Search searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
         </header>
 
-        {/* {trendingMovies.length > 0 && (
-          <section className="trending">
-            <h2>Trending Movies</h2>
-
-            <ul>
-              {trendingMovies.map((movie, index) => (
-                <li key={movie.id} onClick={() => setselectedMovie(movie.id)} className='cursor-pointer'>
-                  <p>{index + 1}</p>
-                  <img src={`https://image.tmdb.org/t/p/w500${movie.poster_path}`} alt={movie.title} />
-                </li>
-              ))}
-            </ul>
-          </section>
-        )} */}
-
-        {trendingMovies.length > 0 && (
+        {trendingMoviesError ? (
+          <p className='text-red-500'>{trendingMoviesError}</p>
+        ) : trendingMovies.length ? (
           <section className="trending">
             <h2>Trending Movies</h2>
             <Swiper
@@ -177,7 +177,7 @@ const App = () => {
                       <p>{index + 1}</p>
                       <img
                         src={`https://image.tmdb.org/t/p/w500${movie.poster_path}`}
-                        alt={movie.title}
+                        alt={movie.title} loading={index > 4 ? "lazy" : "eager"}
                       />
                     </li>
                     {selectedMovie === movie.id && (
@@ -203,8 +203,11 @@ const App = () => {
               ))}
             </Swiper>
           </section>
+        ) : isTrendingMoviesLoading ? (
+          <div className='flex w-full justify-center align-center my-2  mt-10'><Spinner /></div>
+        ) : (
+          <p className='text-gray-500'>No movies found. Try a different search term.</p>
         )}
-
 
         <section className='all-movies' ref={container}>
           <h2 className='mt-[40px]'>All Movies</h2>

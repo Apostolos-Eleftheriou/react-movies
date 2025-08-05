@@ -31,6 +31,7 @@ const MovieModal = ({ movieId, setSelectedMovie }) => {
 
     const [movie, setMovie] = useState(null)
     const [trailerUrl, setTrailerUrl] = useState(null)
+    const [iframeLoading, setIframeLoading] = useState(true);
 
     const fetchByMovieId = async (movieId) => {
         try {
@@ -48,12 +49,18 @@ const MovieModal = ({ movieId, setSelectedMovie }) => {
                 );
                 if (trailer) {
                     setTrailerUrl(`https://www.youtube.com/watch?v=${trailer.key}`);
+                    setIframeLoading(true);
                 } else {
                     setTrailerUrl(null);
+                    setIframeLoading(false);
                 }
+            } else {
+                setTrailerUrl(null);
+                setIframeLoading(false);
             }
         } catch (error) {
             console.error("Error fetching movie:", error);
+            setIframeLoading(false);
         }
     }
 
@@ -72,112 +79,139 @@ const MovieModal = ({ movieId, setSelectedMovie }) => {
                         </button>
                     </div>
                     <div className='flex-1 w-full pt-5 flex flex-col items-center justify-start px-4 max-w-[1250px] self-center'>
-                        <div className='flex justify-between items-center w-full text-zinc-400 my-2'>
+                        <div className='flex justify-between items-center w-full text-zinc-400 my-2 flex-wrap'>
                             <div className='flex items-center gap-2'>
                                 <p className='year'>{movie.release_date ? new Date(movie.release_date).getFullYear() : 'N/A'}</p>
                                 <span>•</span>
                                 <p className='lang'>{movie.runtime ? `${Math.floor(movie.runtime / 60)}h ${movie.runtime % 60}m` : 'N/A'}</p>
                             </div>
-                            <div className='p-2 bg-[var(--color-dark-100)]/60 rounded-lg'>
-                                <p className='flex justify-center items-center'><img src="star.svg" alt="Rating" className='inline-block w-4 h-4 mr-1' />{movie.vote_average.toFixed(1)}/10 ({movie.vote_count.toLocaleString()})</p>
+                            <div className='flex items-center gap-2'>
+                                <div className='p-2 bg-[#221F3D] rounded-lg'>
+                                    <a href={`https://www.imdb.com/title/${movie.imdb_id}/ratings/`} target='_blank'>
+                                        <p className='flex justify-center items-center'><img src="star.svg" alt="Rating" className='inline-block w-4 h-4 mr-1' />{movie.vote_average.toFixed(1)}/10 ({movie.vote_count.toLocaleString()})</p>
+                                    </a>
+                                </div>
                             </div>
                         </div>
-                        <div className='flex flex-col sm:flex-row w-full gap-4'>
-                            <img src={`https://image.tmdb.org/t/p/w500${movie.poster_path}`} alt={movie.title} className='w-auto sm:max-h-[365px] rounded-lg shadow-lg' />
-                            {trailerUrl ? (
-                                <>
-                                    <iframe className='w-full h-[365px] rounded-xl' src={trailerUrl.replace("watch?v=", "embed/")} title="YouTube video player" frameBorder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen></iframe>
+                        <div className='flex flex-col sm:flex-row w-full gap-4 min-h-[365px]'>
+                            {movie.poster_path ? (
+                                <img src={`https://image.tmdb.org/t/p/w500${movie.poster_path}`} alt={movie.title} className='w-auto sm:max-h-[365px] rounded-lg shadow-lg' />
+                            ) : <img src='/no-movie.png' alt={movie.title} className='w-auto sm:max-h-[365px] rounded-lg shadow-lg' />
+                            }
+                            <div className='relative w-full'>
+                                {iframeLoading && (
+                                    <div className='absolute inset-0 flex items-center justify-center bg-black/60 z-10 rounded-xl'>
+                                        <div className='loader border-4 border-purple-400 border-t-transparent rounded-full w-12 h-12 animate-spin'></div>
+                                    </div>
+                                )}
+                                {trailerUrl && (
+                                    <iframe
+                                        className='w-full h-[365px] rounded-xl'
+                                        src={trailerUrl.replace("watch?v=", "embed/")}
+                                        title="YouTube video player"
+                                        allowFullScreen
+                                        onLoad={() => setIframeLoading(false)}
+                                        style={iframeLoading ? { visibility: 'hidden' } : {}}
+                                    ></iframe>
+                                )}
+                                {!trailerUrl && !iframeLoading && (
+                                    <p className='text-gray-500'>No trailer available.</p>
+                                )}
+                            </div>
+                        </div>
+                        <div className='flex flex-col-reverse sm:flex-row justify-center items-start gap-4  mb-5'>
+                            <div className='flex flex-col items-start w-full mt-4 gap-3'>
+                                <div className='flex flex-wrap items-center gap-2'>
+                                    <h3 className='text-lg font-bold text-purple-200 min-w-[140px]'>Genres</h3>
+                                    <p className='text-gray-300'>{movie.genres.map(genre => (
+                                        <span key={genre.id} className='inline-block mr-2 mb-2 px-3 py-1 bg-[#221F3D] rounded-lg'>{genre.name}</span>
+                                    )) || 'No genres available.'}</p>
+                                </div>
 
-                                </>
-                            ) : (
-                                <p className='text-gray-500'>No trailer available.</p>
+                                <div className='flex flex-wrap items-center sm:flex-nowrap gap-2'>
+                                    <h3 className='text-lg font-bold text-purple-200 min-w-[140px]'>Overview</h3>
+                                    <p className='text-violet-300'>{movie.overview || 'No overview available.'}</p>
+                                </div>
+
+                                <div className='flex items-center flex-wrap gap-2'>
+                                    <h3 className='text-lg font-bold text-purple-200 min-w-[140px]'>Release Date</h3>
+                                    <p className='text-violet-300'>{movie.release_date ? new Date(movie.release_date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) + ' ' + '(Worldwide)' : 'N/A'}</p>
+                                </div>
+
+                                <div className='flex items-center flex-wrap gap-2'>
+                                    <h3 className='text-lg font-bold text-purple-200 min-w-[140px]'>Countries</h3>
+                                    <p className='text-violet-300'>
+                                        {movie.production_countries && movie.production_countries.length > 0
+                                            ? movie.production_countries.map((country, idx) => (
+                                                <span key={country.iso_3166_1}>
+                                                    {country.name}
+                                                    {idx < movie.production_countries.length - 1 && <span> • </span>}
+                                                </span>
+                                            ))
+                                            : 'No countries available.'}
+                                    </p>
+                                </div>
+                                <div className='flex items-center flex-wrap gap-2'>
+                                    <h3 className='text-lg font-bold text-purple-200 min-w-[140px]'>Status</h3>
+                                    <p className='text-violet-300'>{movie.status || 'No status available.'}</p>
+                                </div>
+                                <div className='flex items-center flex-wrap gap-2'>
+                                    <h3 className='text-lg font-bold text-purple-200 min-w-[140px]'>Languages</h3>
+                                    <p className='text-violet-300'>
+                                        {movie.spoken_languages && movie.spoken_languages.length > 0
+                                            ? movie.spoken_languages.map((lang, idx) => (
+                                                <span key={lang.iso_639_1}>
+                                                    {lang.english_name}
+                                                    {idx < movie.spoken_languages.length - 1 && <span> • </span>}
+                                                </span>
+                                            ))
+                                            : 'No languages available.'}
+                                    </p>
+                                </div>
+                                <div className='flex items-center flex-wrap gap-2'>
+                                    <h3 className='text-lg font-bold text-purple-200 min-w-[140px]'>Budget</h3>
+                                    <p className='text-violet-300'>
+                                        {movie.budget > 0
+                                            ? formatMoney(movie.budget)
+                                            : 'No budget available.'}
+                                    </p>
+                                </div>
+                                <div className='flex items-center flex-wrap gap-2'>
+                                    <h3 className='text-lg font-bold text-purple-200 min-w-[140px]'>Revenue</h3>
+                                    <p className='text-violet-300'>
+                                        {movie.revenue > 0
+                                            ? formatMoney(movie.revenue)
+                                            : 'No revenue available.'}
+                                    </p>
+                                </div>
+                                <div className='flex items-center flex-wrap gap-2'>
+                                    <h3 className='text-lg font-bold text-purple-200 min-w-[140px]'>Tagline</h3>
+                                    <p className='text-violet-300'>
+                                        {movie.tagline || 'No tagline available.'}
+                                    </p>
+                                </div>
+                                <div className='flex items-center flex-wrap gap-2 mb-4'>
+                                    <h3 className='text-lg font-bold text-purple-200 sm:max-w-[140px]'>Production Companies</h3>
+                                    <p className='text-violet-300'>
+                                        {movie.production_companies && movie.production_companies.length > 0
+                                            ? movie.production_companies.map((company, idx) => (
+                                                <span key={company.id}>
+                                                    {company.name}
+                                                    {idx < movie.production_companies.length - 1 && <span> • </span>}
+                                                </span>
+                                            ))
+                                            : 'No production companies available.'}
+                                    </p>
+                                </div>
+                            </div>
+                            {movie.homepage && (
+                                <a href={`${movie.homepage}`} target='_blank' className='group p-2 bg-linear-to-r from-[#D6C7FF] to-[#AB8BFF] rounded-lg text-black font-semibold w-full sm:w-52 mt-4 flex justify-center items-center whitespace-nowrap'>
+                                    Visit Homepage
+                                    <img src="arrow-right.svg" alt="External Link" className='inline-block w-4 h-4 ml-1 transition-transform duration-300 group-hover:translate-x-1' />
+                                </a>
                             )}
+
                         </div>
-                        <div className='flex flex-col items-start w-full mt-4 gap-3'>
-                            <div className='flex flex-wrap items-center gap-2'>
-                                <h3 className='text-lg font-bold text-purple-200 min-w-[140px]'>Genres</h3>
-                                <p className='text-gray-300'>{movie.genres.map(genre => (
-                                    <span key={genre.id} className='inline-block mr-2 mb-2 px-3 py-1 bg-[#221F3D] rounded-lg'>{genre.name}</span>
-                                )) || 'No genres available.'}</p>
-                            </div>
-
-                            <div className='flex flex-wrap items-center sm:flex-nowrap gap-2'>
-                                <h3 className='text-lg font-bold text-purple-200 min-w-[140px]'>Overview</h3>
-                                <p className='text-violet-300'>{movie.overview || 'No overview available.'}</p>
-                            </div>
-
-                            <div className='flex items-center flex-wrap gap-2'>
-                                <h3 className='text-lg font-bold text-purple-200 min-w-[140px]'>Release Date</h3>
-                                <p className='text-violet-300'>{movie.release_date ? new Date(movie.release_date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) + ' ' + '(Worldwide)' : 'N/A'}</p>
-                            </div>
-
-                            <div className='flex items-center flex-wrap gap-2'>
-                                <h3 className='text-lg font-bold text-purple-200 min-w-[140px]'>Countries</h3>
-                                <p className='text-violet-300'>
-                                    {movie.production_countries && movie.production_countries.length > 0
-                                        ? movie.production_countries.map((country, idx) => (
-                                            <span key={country.iso_3166_1}>
-                                                {country.name}
-                                                {idx < movie.production_countries.length - 1 && <span> • </span>}
-                                            </span>
-                                        ))
-                                        : 'No countries available.'}
-                                </p>
-                            </div>
-                            <div className='flex items-center flex-wrap gap-2'>
-                                <h3 className='text-lg font-bold text-purple-200 min-w-[140px]'>Status</h3>
-                                <p className='text-violet-300'>{movie.status || 'No status available.'}</p>
-                            </div>
-                            <div className='flex items-center flex-wrap gap-2'>
-                                <h3 className='text-lg font-bold text-purple-200 min-w-[140px]'>Languages</h3>
-                                <p className='text-violet-300'>
-                                    {movie.spoken_languages && movie.spoken_languages.length > 0
-                                        ? movie.spoken_languages.map((lang, idx) => (
-                                            <span key={lang.iso_639_1}>
-                                                {lang.english_name}
-                                                {idx < movie.spoken_languages.length - 1 && <span> • </span>}
-                                            </span>
-                                        ))
-                                        : 'No languages available.'}
-                                </p>
-                            </div>
-                            <div className='flex items-center flex-wrap gap-2'>
-                                <h3 className='text-lg font-bold text-purple-200 min-w-[140px]'>Budget</h3>
-                                <p className='text-violet-300'>
-                                    {movie.budget > 0
-                                        ? formatMoney(movie.budget)
-                                        : 'No budget available.'}
-                                </p>
-                            </div>
-                            <div className='flex items-center flex-wrap gap-2'>
-                                <h3 className='text-lg font-bold text-purple-200 min-w-[140px]'>Revenue</h3>
-                                <p className='text-violet-300'>
-                                    {movie.revenue > 0
-                                        ? formatMoney(movie.revenue)
-                                        : 'No revenue available.'}
-                                </p>
-                            </div>
-                            <div className='flex items-center flex-wrap gap-2'>
-                                <h3 className='text-lg font-bold text-purple-200 min-w-[140px]'>Tagline</h3>
-                                <p className='text-violet-300'>
-                                    {movie.tagline || 'No tagline available.'}
-                                </p>
-                            </div>
-                            <div className='flex items-center flex-wrap gap-2 mb-4'>
-                                <h3 className='text-lg font-bold text-purple-200 sm:max-w-[140px]'>Production Companies</h3>
-                                <p className='text-violet-300'>
-                                    {movie.production_companies && movie.production_companies.length > 0
-                                        ? movie.production_companies.map((company, idx) => (
-                                            <span key={company.id}>
-                                                {company.name}
-                                                {idx < movie.production_companies.length - 1 && <span> • </span>}
-                                            </span>
-                                        ))
-                                        : 'No production companies available.'}
-                                </p>
-                            </div>
-                        </div>
-
                     </div>
                 </div>
             )}
@@ -186,3 +220,17 @@ const MovieModal = ({ movieId, setSelectedMovie }) => {
 }
 
 export default MovieModal
+
+// Add this to your global CSS (e.g., index.css) if not already present:
+// .loader {
+//   border-width: 4px;
+//   border-style: solid;
+//   border-color: #a78bfa #a78bfa #a78bfa transparent;
+//   border-radius: 9999px;
+//   width: 3rem;
+//   height: 3rem;
+//   animation: spin 1s linear infinite;
+// }
+// @keyframes spin {
+//   to { transform: rotate(360deg); }
+// }

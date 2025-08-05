@@ -8,7 +8,7 @@ const MovieCard = ({ movie: { id, title, vote_average, poster_path, release_date
             className={`movie-card cursor-pointer relative transition-all duration-200 hover:scale-103${!isSelected ? ' shadow-lg' : ''}`}
             onClick={onClick}
         >
-            <img src={poster_path ? `https://image.tmdb.org/t/p/w500${poster_path}` : '/no-movie.png'} alt={title} />
+            <img src={poster_path ? `https://image.tmdb.org/t/p/w500${poster_path}` : '/no-movie.png'} alt={title} loading='lazy' />
             <div className='mt-4'>
                 <h3>{title}</h3>
                 <div className='content'>
